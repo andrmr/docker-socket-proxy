@@ -1,7 +1,9 @@
 ARG GO_VER=1.25
 ARG OS_VER=3.22
 
-FROM dhi.io/golang:${GO_VER}-alpine${OS_VER}-dev AS builder
+ARG BUILDPLATFORM=linux/amd64
+
+FROM --platform=${BUILDPLATFORM} dhi.io/golang:${GO_VER}-alpine${OS_VER}-dev AS builder
 
 WORKDIR /build
 COPY go.mod ./
@@ -10,6 +12,7 @@ COPY pkg/ ./pkg/
 
 ARG TARGETOS
 ARG TARGETARCH
+ARG TARGETPLATFORM
 
 RUN CGO_ENABLED=0 \
     GOOS=${TARGETOS} \
