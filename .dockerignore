@@ -1,0 +1,26 @@
+# Git and GitHub
+.git
+.github
+.gitignore
+.dockerignore
+
+# Build and CI artifacts
+*.test
+*.out
+*.prof
+*.json
+*.txt
+Makefile
+docker-compose.yml
+
+# Documentation
+README.md
+LICENSE
+
+# Source code that shouldn't be in the runtime image
+* _test.go
+docs/
+
+# IDE files
+.vscode
+.idea

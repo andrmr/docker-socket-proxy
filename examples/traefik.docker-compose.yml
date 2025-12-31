@@ -1,0 +1,91 @@
+# =====================================================================
+#  SHARED YAML ANCHORS
+# =====================================================================
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: 3
+
+x-security: &default-security
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  tty: false
+  stdin_open: false
+
+# =====================================================================
+#  NETWORKS
+# =====================================================================
+
+networks:
+  socket:
+    internal: true
+
+# =====================================================================
+#  SERVICES
+# =====================================================================
+
+services:
+  socket-proxy:
+    container_name: socket-proxy
+    image: ghcr.io/andrmr/docker-socket-proxy:latest
+    build: .
+    restart: unless-stopped
+
+    read_only: true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+    networks:
+      - socket
+
+    user: "65532:${DOCKER_GID}"
+    <<: *default-security
+
+    environment:
+      GOMEMLIMIT: 14MiB
+      GOMAXPROCS: 2
+      GOGC: 400
+      POLICY: "/policies/traefik.json"
+      LISTEN_ADDR: ":2375"
+      DOCKER_SOCKET_PATH: "/var/run/docker.sock"
+
+    deploy:
+      resources:
+        limits:
+          cpus: 0.1
+          memory: 16m
+          pids: 16
+
+    logging: *default-logging
+
+  traefik-nonroot:
+    image: dhi.io/traefik:3
+    container_name: traefik-nonroot
+    restart: unless-stopped
+
+    user: "nonroot:nonroot"
+
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.watch=true"
+      - "--providers.docker.endpoint=tcp://socket-proxy:2375"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "127.0.0.1:80:80"
+    networks:
+      - socket
+    depends_on:
+      - socket-proxy
+
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=128m
+      - /var/run:rw,noexec,nosuid,nodev,size=128m
+
+    <<: *default-security
+    logging: *default-logging

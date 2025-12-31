@@ -1,0 +1,21 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Check
+    uses: ./.github/workflows/check.yml
+
+  build:
+    name: Build
+    needs: check
+    uses: ./.github/workflows/build.yml
+    secrets: inherit

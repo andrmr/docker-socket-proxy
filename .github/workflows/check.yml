@@ -1,0 +1,34 @@
+name: Check
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: ${{ matrix.task }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        task: [Test, Lint]
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: 1.25
+
+      - name: Test
+        if: matrix.task == 'Test'
+        run: go test -v ./...
+
+      - name: Lint
+        if: matrix.task == 'Lint'
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.7
