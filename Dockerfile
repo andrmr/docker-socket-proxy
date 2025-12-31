@@ -30,8 +30,6 @@ ENV POLICY="/policies/traefik.json"
 ENV LISTEN_ADDR=":2375"
 ENV DOCKER_SOCKET_PATH="/var/run/docker.sock"
 
-CMD ["-policy=$POLICY", "-listen-addr=$LISTEN_ADDR", "-socket-path=$DOCKER_SOCKET_PATH"]
-
 LABEL org.opencontainers.image.description="Docker Socket Proxy"
 LABEL org.opencontainers.image.url="https://github.com/andrmr/docker-socket-proxy"
 LABEL org.opencontainers.image.source="https://github.com/andrmr/docker-socket-proxy.git"

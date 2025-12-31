@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -23,19 +24,45 @@ const (
 	shutdownTimeout         = 10 * time.Second
 )
 
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
+
 func main() {
-	policyPath := flag.String("policy", "policy.json", "Path to the authorization policy JSON file")
-	listenAddr := flag.String("listen-addr", ":2375", "Address to listen on")
-	socketPath := flag.String("socket-path", "/var/run/docker.sock", "Path to the Docker Unix socket")
+	showUsage := func() {
+		fmt.Fprintf(os.Stderr, "Docker Socket Proxy using JSON policy for access control.\n\n")
+		fmt.Fprintf(os.Stderr, "Usage:\n")
+		fmt.Fprintf(os.Stderr, "  docker-socket-proxy [flags]\n\n")
+		fmt.Fprintf(os.Stderr, "Configuration can be provided via flags or environment variables.\n")
+		fmt.Fprintf(os.Stderr, "Example:\n")
+		fmt.Fprintf(os.Stderr, "DOCKER_SOCKET_PATH=/run/docker.sock docker-socket-proxy -listen-addr :2376\n")
+	}
+
+	policyPath := flag.String("policy", getEnv("POLICY", "policy.json"), "Path to the authorization policy JSON file")
+	listenAddr := flag.String("listen-addr", getEnv("LISTEN_ADDR", ":2375"), "Address to listen on")
+	socketPath := flag.String(
+		"socket-path",
+		getEnv("DOCKER_SOCKET_PATH", "/var/run/docker.sock"),
+		"Path to the Docker Unix socket",
+	)
 	flag.Parse()
 
 	logger := initLogger()
 
 	logger.Info("starting docker socket proxy", "listen", *listenAddr, "socket", *socketPath, "policy", *policyPath)
 
+	if _, err := os.Stat(*policyPath); os.IsNotExist(err) {
+		fmt.Fprintf(os.Stderr, "Error: Policy file not found: %s\n\n", *policyPath)
+		showUsage()
+		os.Exit(1)
+	}
+
 	pol, err := auth.LoadPolicy(*policyPath)
 	if err != nil {
-		logger.Error("failed to load policy", "err", err)
+		fmt.Fprintf(os.Stderr, "Error: Failed to load policy: %v\n", err)
 		os.Exit(1)
 	}
 
