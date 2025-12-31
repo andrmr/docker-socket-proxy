@@ -1,0 +1,22 @@
+name: Registry Cleanup
+
+on:
+    workflow_call:
+    workflow_dispatch:
+
+permissions:
+    contents: read
+    packages: write
+
+jobs:
+    registry-cleanup:
+        name: Registry Cleanup
+        runs-on: ubuntu-latest
+        steps:
+            - name: Delete non-versioned images
+              uses: actions/delete-package-versions@v5
+              with:
+                  package-name: ${{ github.event.repository.name }}
+                  package-type: "container"
+                  min-versions-to-keep: 0
+                  delete-only-untagged-versions: "true"

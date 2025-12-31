@@ -118,3 +118,9 @@ jobs:
         with:
           body_path: release_body.md
           generate_release_notes: true
+
+  registry-cleanup:
+    name: Registry Cleanup
+    needs: [publish, release]
+    if: always() && (needs.publish.result == 'success')
+    uses: ./.github/workflows/registry-cleanup.yml
